@@ -1,0 +1,125 @@
+---
+title: "Data Science Mid-Term Coursework Q2"
+output: html_document
+date: "2025-12-04"
+---
+
+#Set Working Directory
+CHANGE TO YOUR PERSONAL ONE!!!
+```{r}
+setwd("C:/Users/aikhs/OneDrive/Fufu's work/School/Imperial/Year 1/Data Science/Mid Term Project")
+```
+
+
+# Loading of packages and libraries
+```{r Loading libraries}
+library(tidyverse)
+library(ggplot2)
+library(stringr)
+library(dslabs)
+library(english)
+```
+
+# Datasets
+## Loading of dataset
+```{r Loading of datasets}
+continents <- read.csv("continents-according-to-our-world-in-data.csv")
+gdp_per_capita <- read.csv("gdp-per-capita-worldbank.csv")
+youth <- read.csv("youth-not-in-education-employment-training.csv")
+population <- read.csv("Extra CSV.csv")
+```
+
+## Cleaning satasets
+```{r Cleaning datasets before merging}
+continents <- continents %>%
+  select(c(-Year, -Code))
+
+population <- population %>%
+  pivot_longer(
+    cols = `X1960`:`X2024`,
+    names_to = "Year",
+    values_to = "Population"
+  )
+population <- population %>%
+  mutate(Year = as.integer(sub("^X", "", as.character(Year)))) %>%
+  select(Country.Name, Year, Population) %>%
+  rename(Country = Country.Name)
+
+```
+
+## Merging datasets
+```{r Merging Datasets}
+df <- youth %>%
+  left_join(continents, by ="Entity") %>%
+  rename(Country = Entity, 
+         NEET_percentage = Share.of.youth.not.in.education..employment.or.training..total....of.youth.population.) %>%
+  arrange(Continent, Country, Year) %>%
+  drop_na(Continent)
+
+df <- df %>%
+  left_join(population, by = c('Country', 'Year'))
+# Checking that there are only 6 continents present no NA
+unique(df$Continent)
+```
+## Data sets for plotting graphs
+```{r}
+df2 <- df %>%
+  filter(Year == 2015 | Year == 2020) %>%
+  group_by(Continent, Year) %>%
+  summarise(continent_avg_NEET = mean(NEET_percentage), na.rm = TRUE)
+
+df <- df %>%
+  group_by(Continent, Year) %>%
+  mutate(continent_population = sum(as.numeric(Population), na.rm = TRUE)) %>%
+  mutate(weight = (Population/continent_population)) %>%
+  mutate(continent_weighted_NEET = (weight * NEET_percentage))
+
+df3 <- df %>%
+  filter(Year == 2015 | Year == 2020) %>%
+  group_by(Continent, Year) %>%
+  summarise(continent_weightedavg_NEET = sum(continent_weighted_NEET, na.rm = TRUE))
+
+```
+
+
+# Plotting Graphs
+## Line / Scatter Graph
+### All Continents (2015 vs 2020)
+```{r Bar Graph 2015 against 2020}
+df2 %>%
+  ggplot(aes(x = Year, y = continent_avg_NEET, fill = Year)) +
+  geom_col() +
+  facet_wrap(~ Continent) +
+  scale_x_continuous(breaks = c(2015, 2020)) +
+  labs(x = "Year",
+       y = "Average NEET (%)",
+       title = "NEET by Continent Across Years") +
+  theme_minimal() + 
+  theme(
+    axis.title = element_text(size = 12, face = 'bold'),
+    axis.text = element_text(size = 10),
+    plot.title = element_text(hjust = 0.5, size = 15, face = 'bold'),
+    
+  )
+
+```
+
+### All Continents (2015 vs 2020) -- aggregate
+```{r bar graph aggregate 2015 against 2020}
+df3 %>%
+  ggplot(aes(x = Year, y = continent_weightedavg_NEET, fill = Year)) +
+  geom_col() +
+  facet_wrap(~ Continent) +
+  scale_x_continuous(breaks = c(2015, 2020)) +
+  labs(x = "Year",
+       y = "Average NEET (%)",
+       title = "NEET by Continent Across Years") +
+  theme_minimal() + 
+  theme(
+    axis.title = element_text(size = 12, face = 'bold'),
+    axis.text = element_text(size = 10),
+    plot.title = element_text(hjust = 0.5, size = 15, face = 'bold'),
+    
+  )
+```
+
