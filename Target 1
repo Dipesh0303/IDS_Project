@@ -1,0 +1,156 @@
+# Exploratory data analysis for target 1
+
+# Loading libraries
+library(tidyverse)
+library(ggplot2)
+library(dplyr)
+library(sf)
+library(rnaturalearth)
+library(rnaturalearthdata)
+library(readr)
+
+# Set working direcory (change this to your personal working directory)
+setwd("C:/Imperial/data sets")
+
+# Loading datasets
+continents <- read.csv("continents-according-to-our-world-in-data.csv")
+GDP_per_capita <- read.csv("gdp-per-capita-worldbank.csv")
+world <- ne_countries(scale = "medium", returnclass = "sf")
+
+# Merging datasets
+full_data <- inner_join(continents, GDP_per_capita, join_by("Code" == "Code", "Entity" == "Entity"))
+
+# cleaning the data and calculating the mean GDP per capita in each country for each year
+full_data <- full_data %>% select(-Year.x) %>%
+  rename("Year" = Year.y) %>%
+  rename("GDPperCapita" = GDP.per.capita..PPP..constant.2017.international...) %>%
+  group_by(Year, Continent) %>%
+  mutate(Mean_GDPperCapita = mean(GDPperCapita, na.rm = TRUE)) %>%
+  ungroup()
+
+# code to calculate GDP growth for each country
+full_data <- full_data %>%
+  arrange(Entity, Year) %>%
+  group_by(Entity) %>%
+  mutate(GDP_growth = (GDPperCapita - lag(GDPperCapita)) / lag(GDPperCapita) * 100) %>%
+  ungroup()
+
+# code to calculate mean GDP growth for each continent
+ContinentalGDPgrowth <- full_data %>%
+  arrange(Year) %>%
+  group_by(Continent, Year) %>%
+  summarise(continentalGDPgrowth = mean(GDP_growth, na.rm = TRUE)) %>%
+  ungroup()
+
+North_America <- filter(full_data, Continent == "North America")
+Asia <- filter(full_data, Continent == "Asia")
+
+# creating dataframe to make chloropleth for 2020
+GDP2020 <- filter(GDP_per_capita, Year == 2020) %>%
+  rename("GDPperCapita" = GDP.per.capita..PPP..constant.2017.international...) %>%
+  mutate(Entity = recode(Entity,
+                         "United States" = "United States of America",
+                         "Bosnia and Herzegovina" = "Bosnia and Herz.",
+                         "Democratic Republic of Congo" = "Dem. Rep. Congo",
+                         "Cape Verde" = "Cabo Verde",
+                         "East Timor" = "Timor-Leste",
+                         "Micronesia (country)" = "Micronesia",
+                         "Eswatini" = "eSwatini",
+                         "Antigua and Barbuda" = "Antigua and Barb.",
+                         "Central African Republic" = "Central African Rep.",
+                         "Congo, Democratic Republic of the" = "Dem. Rep. Congo",
+                         "Dominican Republic" = "Dominican Rep.",
+                         "Equatorial Guinea" = "Eq. Guinea",
+                         "Marshall Islands" = "Marshall Is.",
+                         "Solomon Islands" = "Solomon Is.",
+                         "Saint Kitts and Nevis" = "St. Kitts and Nevis",
+                         "Turks and Caicos Islands" = "Turks and Caicos Is.",
+                         "Côte d'Ivoire" = "Ivory Coast",
+                         "Curacao" = "Curaçao",
+                         "St. Vincent and the Grenadines" = "St. Vincent and the Grenadines",
+                         "Sao Tome and Principe" = "São Tomé and Principe",
+                         "Cayman Islands" = "Cayman Is."
+  ))
+
+map_data2020 <- world %>%
+  left_join(GDP2020, by = c("name" = "Entity"))
+
+# Chloropleth for GDP per capita by Country (2020)
+ggplot(map_data2020) +
+  geom_sf(aes(fill = GDPperCapita), color = NA) +
+  scale_fill_viridis_c(option = "turbo", na.value = "grey80") +
+  theme_minimal() +
+  labs(
+    title = "GDP per capita by Country (2020)",
+    fill = "GDP per Capita"
+  )
+
+# Chloropleth for GDP per capita by Country (2020) using a log scale
+ggplot(map_data2020) +
+  geom_sf(aes(fill = GDPperCapita), color = NA) +
+  scale_fill_viridis_c(trans = "log", na.value = "grey85") +
+  theme_void() +
+  labs(
+    title = "GDP per capita by Country in 2020 (log scale)",
+    fill = "GDP per Capita"
+  )
+
+# Line chart showing the mean GDP per capita over time globally
+full_data %>% 
+  ggplot(aes(x = Year, y = Mean_GDPperCapita, colour = Continent, shape = Continent)) +
+  geom_point() +
+  geom_line() +
+  labs(title = "Mean GDP per capita over time",
+       x = "Year",
+       y = "Mean GDP per capita") +
+  theme(
+    axis.title = element_text(size = 12, face = "bold"),
+    axis.text = element_text(size = 8),
+    plot.title = element_text(hjust = 0.5, size = 15, face = "bold")
+  )
+
+# Line chart showing the mean GDP growth over time globally
+ContinentalGDPgrowth %>% 
+  ggplot(aes(x = Year, y = continentalGDPgrowth, colour = Continent, shape = Continent)) +
+  geom_point() +
+  geom_line() +
+  labs(title = "Mean GDP growth over time per continent",
+       x = "Year",
+       y = "Mean GDP growth") +
+  theme(
+    axis.title = element_text(size = 12, face = "bold"),
+    axis.text = element_text(size = 8),
+    plot.title = element_text(hjust = 0.5, size = 15, face = "bold")
+  )
+
+# Bar graph showing the number of time GDP growth is over 7% in countries globally
+full_data %>% filter(GDP_growth > 7) %>%
+  group_by(Continent) %>%
+  summarise(count = n()) %>%
+  ggplot(aes(x = reorder(Continent, -count), y = count, fill = Continent)) +
+  geom_bar(stat = "identity") +
+  labs(
+    title = "Number of Years Each Country Achieved > 7% GDP Growth Globally",
+    x = "Continent",
+    y = "Number of Years Over 7% Growth") +
+  theme(
+    axis.title = element_text(size = 12, face = "bold"),
+    axis.text = element_text(size = 10),
+    plot.title = element_text(hjust = 0.5, size = 15, face = "bold"),
+    legend.position = "none"
+  )
+
+# Heatmap globally showing mean GDP growth per continent
+full_data %>%
+  group_by(Continent, Year) %>%
+  summarise(Mean_Growth = mean(GDP_growth, na.rm = TRUE)) %>%
+  ggplot(aes(x = Year, y = Continent, fill = Mean_Growth)) +
+  geom_tile() +
+  scale_fill_viridis_c(option = "inferno") +
+  labs(title = "Mean GDP Growth by Continent and Year",
+       fill = "Mean GDP growth") +
+  theme(
+    axis.title = element_text(size = 12, face = "bold"),
+    axis.text = element_text(size = 10),
+    plot.title = element_text(hjust = 0.5, size = 15, face = "bold")
+  )
