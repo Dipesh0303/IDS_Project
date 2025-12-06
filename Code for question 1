@@ -78,7 +78,7 @@ map_data2020 <- world %>%
 # Chloropleth for GDP per capita by Country (2020)
 ggplot(map_data2020) +
   geom_sf(aes(fill = GDPperCapita), color = NA) +
-  scale_fill_viridis_c(option = "turbo", na.value = "grey80") +
+  scale_fill_viridis_c(option = "D", na.value = "grey80") +
   theme_minimal() +
   labs(
     title = "GDP per capita by Country (2020)",
@@ -123,22 +123,27 @@ ContinentalGDPgrowth %>%
     plot.title = element_text(hjust = 0.5, size = 15, face = "bold")
   )
 
-# Bar graph showing the number of time GDP growth is over 7% in countries globally
-full_data %>% filter(GDP_growth > 7) %>%
-  group_by(Continent) %>%
-  summarise(count = n()) %>%
-  ggplot(aes(x = reorder(Continent, -count), y = count, fill = Continent)) +
-  geom_bar(stat = "identity") +
+# Stacked bar graph showing the number of times GDP growth is over 7% over time continentally
+full_data %>% filter(GDP_growth > 7, Year %in% c(2000,2005,2010,2015,2020)) %>%
+  group_by(Continent, Year) %>%
+  summarise(count = n(), .groups = "drop") %>%
+  ggplot(aes(x = reorder(Continent, -count), y = count, fill = factor(Year))) +
+  geom_bar(stat = "identity", position = "stack") +
+  geom_text(aes(label = count), 
+            position = position_stack(vjust = 0.5),
+            colour = "white",
+            size = 4) +
   labs(
-    title = "Number of Years Each Country Achieved > 7% GDP Growth Globally",
+    title = "Number of countries that achieved > 7% GDP Growth in each continent",
     x = "Continent",
-    y = "Number of Years Over 7% Growth") +
+    y = "Number of Countries Over 7% Growth",
+    fill = "Year") +
   theme(
     axis.title = element_text(size = 12, face = "bold"),
     axis.text = element_text(size = 10),
     plot.title = element_text(hjust = 0.5, size = 15, face = "bold"),
-    legend.position = "none"
-  )
+  ) +
+  scale_fill_manual(values = c("2000" = "#09c2a5", "2005" = "#0097af", "2010" = "darkorange", "2015" = "#ed0000", "2020" = "hotpink"))
 
 # Heatmap globally showing mean GDP growth per continent
 full_data %>%
@@ -153,4 +158,31 @@ full_data %>%
     axis.title = element_text(size = 12, face = "bold"),
     axis.text = element_text(size = 10),
     plot.title = element_text(hjust = 0.5, size = 15, face = "bold")
+  )
+
+# Table counting number of countries in each continent with GDP per capita data
+full_data %>% filter(Year == 2020) %>%
+  group_by(Continent) %>%
+  summarise("Number of countries" = n())
+
+#Chloropleth for GDP per capita by Country (2020) in Asia using a log scale
+map_data2020 %>% filter(continent == "Asia") %>%
+  ggplot() +
+  geom_sf(aes(fill = GDPperCapita), color = NA) +
+  scale_fill_viridis_c(trans = "log", option = "D", na.value = "grey80") +
+  theme_minimal() +
+  labs(
+    title = "GDP per capita by Country in Asia in 2020 (log scale)",
+    fill = "GDP per Capita"
+  )
+
+#Chloropleth for GDP per capita by Country (2020) in North America using a log scale
+map_data2020 %>% filter(continent == "North America") %>%
+  ggplot() +
+  geom_sf(aes(fill = GDPperCapita), color = NA) +
+  scale_fill_viridis_c(trans = "log", option = "D", na.value = "grey80") +
+  theme_minimal() +
+  labs(
+    title = "GDP per capita by Country in North America in 2020 (log scale)",
+    fill = "GDP per Capita"
   )
