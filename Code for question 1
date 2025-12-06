@@ -103,6 +103,7 @@ full_data %>%
   labs(title = "Mean GDP per capita over time",
        x = "Year",
        y = "Mean GDP per capita") +
+  theme_minimal() +
   theme(
     axis.title = element_text(size = 12, face = "bold"),
     axis.text = element_text(size = 8),
@@ -117,6 +118,7 @@ ContinentalGDPgrowth %>%
   labs(title = "Mean GDP growth over time per continent",
        x = "Year",
        y = "Mean GDP growth") +
+  theme_minimal() +
   theme(
     axis.title = element_text(size = 12, face = "bold"),
     axis.text = element_text(size = 8),
