@@ -123,7 +123,7 @@ ContinentalGDPgrowth %>%
     plot.title = element_text(hjust = 0.5, size = 15, face = "bold")
   )
 
-# Stacked bar graph showing the number of times GDP growth is over 7% over time continentally
+# Stacked bar graph showing the number of countries where GDP growth is over 7% over time in each continent
 full_data %>% filter(GDP_growth > 7, Year %in% c(2000,2005,2010,2015,2020)) %>%
   group_by(Continent, Year) %>%
   summarise(count = n(), .groups = "drop") %>%
@@ -138,11 +138,13 @@ full_data %>% filter(GDP_growth > 7, Year %in% c(2000,2005,2010,2015,2020)) %>%
     x = "Continent",
     y = "Number of Countries Over 7% Growth",
     fill = "Year") +
+  theme_minimal() +
   theme(
-    axis.title = element_text(size = 12, face = "bold"),
-    axis.text = element_text(size = 10),
-    plot.title = element_text(hjust = 0.5, size = 15, face = "bold"),
-  ) +
+    axis.title = element_text(size = 15, face = "bold"),
+    axis.text = element_text(size = 12),
+    plot.title = element_text(hjust = 0.5, size = 20, face = "bold"),
+    legend.title = element_text(size = 15, face = "bold"),
+    legend.text = element_text(size = 12)) +
   scale_fill_manual(values = c("2000" = "#09c2a5", "2005" = "#0097af", "2010" = "darkorange", "2015" = "#ed0000", "2020" = "hotpink"))
 
 # Heatmap globally showing mean GDP growth per continent
@@ -202,6 +204,39 @@ Asia %>% filter(GDP_growth > 7) %>%
   geom_text(aes(label = count), hjust = -0.2, size = 3) +
   labs(
     title = "Number of Years Each Country Achieved > 7% GDP Growth in Asia",
+    x = "Number of Years with Over 7% GDP Growth",
+    y = "Country",
+    fill = "Income classification") +
+  theme_minimal() +
+  theme(
+    axis.title = element_text(size = 15, face = "bold"),
+    axis.text = element_text(size = 12),
+    plot.title = element_text(hjust = 0.5, size = 20, face = "bold"),
+    legend.title = element_text(size = 15, face = "bold"),
+    legend.text = element_text(size = 12)) +
+  scale_fill_manual(
+    values = c("Low income" = "#ed0000",
+               "Low-middle income" = "darkorange",
+               "Upper-middle income" = "#09c2a5",
+               "High income" = "#0097af"),
+    breaks = c("High income", "Upper-middle income", "Low-middle income", "Low income")
+  )
+
+# Bar graph showing the number of times GDP growth is over 7% in countries in north America.
+North_America %>% filter(GDP_growth > 7) %>%
+  group_by(Entity) %>%
+  summarise(count = n(),
+            avg_gdppc = mean(GDPperCapita, na.rm = TRUE)) %>%
+  arrange(desc(count)) %>%
+  ggplot(aes(x = count, y = reorder(Entity, count), fill = case_when(
+    avg_gdppc < 1600 ~ "Low income",
+    between(avg_gdppc, 1600, 5000) ~ "Low-middle income",
+    between(avg_gdppc, 5000, 14000) ~ "Upper-middle income",
+    avg_gdppc >14000 ~ "High income"))) +
+  geom_bar(stat = "identity") +
+  geom_text(aes(label = count), hjust = -0.2, size = 3) +
+  labs(
+    title = "Number of Years Each Country Achieved > 7% GDP Growth in North America",
     x = "Number of Years with Over 7% GDP Growth",
     y = "Country",
     fill = "Income classification") +
