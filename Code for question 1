@@ -77,33 +77,37 @@ map_data2020 <- world %>%
 
 # Chloropleth for GDP per capita by Country (2020)
 ggplot(map_data2020) +
-  geom_sf(aes(fill = GDPperCapita), color = NA) +
-  scale_fill_viridis_c(option = "D", na.value = "grey80") +
+  geom_sf(aes(fill = GDPperCapita), color = "white", size = 0.15) +
+  scale_fill_viridis_c(option = "B", na.value = "grey80") +
   theme_minimal() +
   labs(
     title = "GDP per capita by Country (2020)",
+    subtitle = "Grey countries indicate missing data",
     fill = "GDP per Capita"
   ) +
   theme(
     axis.title = element_text(size = 15, face = "bold"),
     axis.text = element_text(size = 12),
     plot.title = element_text(hjust = 0.5, size = 20, face = "bold"),
+    plot.subtitle = element_text(hjust = 0.5, size = 15),
     legend.title = element_text(size = 15, face = "bold"),
     legend.text = element_text(size = 12))
 
 # Chloropleth for GDP per capita by Country (2020) using a log scale
 ggplot(map_data2020) +
-  geom_sf(aes(fill = GDPperCapita), color = NA) +
-  scale_fill_viridis_c(trans = "log", na.value = "grey85") +
+  geom_sf(aes(fill = GDPperCapita), color = "white", size = 0.15) +
+  scale_fill_viridis_c(option = "B",trans = "log", na.value = "grey85") +
   theme_void() +
   labs(
     title = "GDP per capita by Country in 2020 (log scale)",
+    subtitle = "Grey countries indicate missing data",
     fill = "GDP per Capita"
   ) +
   theme(
     axis.title = element_text(size = 15, face = "bold"),
     axis.text = element_text(size = 12),
     plot.title = element_text(hjust = 0.5, size = 20, face = "bold"),
+    plot.subtitle = element_text(hjust = 0.5, size = 15),
     legend.title = element_text(size = 15, face = "bold"),
     legend.text = element_text(size = 12))
 
@@ -188,34 +192,38 @@ full_data %>% filter(Year == 2020) %>%
 #Chloropleth for GDP per capita by Country (2020) in Asia using a log scale
 map_data2020 %>% filter(continent == "Asia") %>%
   ggplot() +
-  geom_sf(aes(fill = GDPperCapita), color = NA) +
-  scale_fill_viridis_c(trans = "log", option = "D", na.value = "grey80") +
+  geom_sf(aes(fill = GDPperCapita), color = "white", size = 0.15) +
+  scale_fill_viridis_c(option = "B", trans = "log", na.value = "grey80") +
   theme_minimal() +
   labs(
     title = "GDP per capita by Country in Asia in 2020 (log scale)",
+    subtitle = "Grey values indicate missing data",
     fill = "GDP per Capita"
   ) +
   theme(
     axis.title = element_text(size = 15, face = "bold"),
     axis.text = element_text(size = 12),
     plot.title = element_text(hjust = 0.5, size = 20, face = "bold"),
+    plot.subtitle = element_text(hjust = 0.5, size = 15),
     legend.title = element_text(size = 15, face = "bold"),
     legend.text = element_text(size = 12))
 
 #Chloropleth for GDP per capita by Country (2020) in North America using a log scale
 map_data2020 %>% filter(continent == "North America") %>%
   ggplot() +
-  geom_sf(aes(fill = GDPperCapita), color = NA) +
-  scale_fill_viridis_c(trans = "log", option = "D", na.value = "grey80") +
+  geom_sf(aes(fill = GDPperCapita), color = "white", size = 0.15) +
+  scale_fill_viridis_c(trans = "log", option = "B", na.value = "grey80") +
   theme_minimal() +
   labs(
     title = "GDP per capita by Country in North America in 2020 (log scale)",
+    subtitle = "Grey values indicate missing data",
     fill = "GDP per Capita"
   ) +
   theme(
     axis.title = element_text(size = 15, face = "bold"),
     axis.text = element_text(size = 12),
     plot.title = element_text(hjust = 0.5, size = 20, face = "bold"),
+    plot.subtitle = element_text(hjust = 0.5, size = 15),
     legend.title = element_text(size = 15, face = "bold"),
     legend.text = element_text(size = 12))
 
@@ -302,3 +310,50 @@ ContinentalGDPgrowth %>%
     plot.title = element_text(hjust = 0.5, size = 20, face = "bold"),
     legend.position = "none") +
   scale_fill_manual(values = c("Oceania" = "purple2", "Europe" = "#09c2a5", "Africa" = "#0097af", "Asia" = "darkorange", "South America" = "#ed0000", "North America" = "hotpink"))
+
+# dataframe for chloropleth for 2019
+GDP2019 <- filter(full_data, Year == 2019) %>%
+  mutate(Entity = recode(Entity,
+                         "United States" = "United States of America",
+                         "Bosnia and Herzegovina" = "Bosnia and Herz.",
+                         "Democratic Republic of Congo" = "Dem. Rep. Congo",
+                         "Cape Verde" = "Cabo Verde",
+                         "East Timor" = "Timor-Leste",
+                         "Micronesia (country)" = "Micronesia",
+                         "Eswatini" = "eSwatini",
+                         "Antigua and Barbuda" = "Antigua and Barb.",
+                         "Central African Republic" = "Central African Rep.",
+                         "Congo, Democratic Republic of the" = "Dem. Rep. Congo",
+                         "Dominican Republic" = "Dominican Rep.",
+                         "Equatorial Guinea" = "Eq. Guinea",
+                         "Marshall Islands" = "Marshall Is.",
+                         "Solomon Islands" = "Solomon Is.",
+                         "Saint Kitts and Nevis" = "St. Kitts and Nevis",
+                         "Turks and Caicos Islands" = "Turks and Caicos Is.",
+                         "Côte d'Ivoire" = "Ivory Coast",
+                         "Curacao" = "Curaçao",
+                         "St. Vincent and the Grenadines" = "St. Vincent and the Grenadines",
+                         "Sao Tome and Principe" = "São Tomé and Principe",
+                         "Cayman Islands" = "Cayman Is."
+  ))
+
+map_data2019 <- world %>%
+  left_join(GDP2019, by = c("name" = "Entity"))
+
+# Chloropleth for GDP growth by Country (2019)
+ggplot(map_data2019) +
+  geom_sf(aes(fill = GDP_growth), color = "white", size = 0.15) +
+  scale_fill_viridis_c(option = "B", trans = scales::pseudo_log_trans(base = 10), na.value = "grey85") +
+  theme_minimal() +
+  labs(
+    title = "GDP Growth by Country (2019, log scaled)",
+    subtitle = "Uses pseudo-logarithmic colour scaling to handle extreme values. Grey countries indicate missing data",
+    fill = "GDP Growth (%)"
+  ) +
+  theme(
+    axis.title = element_text(size = 15, face = "bold"),
+    axis.text = element_text(size = 12),
+    plot.title = element_text(hjust = 0.5, size = 20, face = "bold"),
+    plot.subtitle = element_text(hjust = 0.5, size = 15),
+    legend.title = element_text(size = 15, face = "bold"),
+    legend.text = element_text(size = 12))
