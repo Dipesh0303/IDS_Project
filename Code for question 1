@@ -292,9 +292,9 @@ ContinentalGDPgrowth %>%
   geom_jitter(width = 0.12, alpha = 0.5, size = 1) +
   theme_minimal(base_size = 13) +
   labs(
-    title = "Distribution of GDP Growth by Continent",
+    title = "Distribution of Annual GDP Growth by Continent",
     x = "Continent",
-    y = "Annual mean GDP growth (%)"
+    y = "Annual Mean GDP growth (%)"
   ) +
   theme(
     axis.title = element_text(size = 15, face = "bold"),
