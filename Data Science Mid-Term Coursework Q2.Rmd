@@ -60,34 +60,62 @@ df <- df %>%
   left_join(population, by = c('Country', 'Year'))
 # Checking that there are only 6 continents present no NA
 unique(df$Continent)
-```
-## Data sets for plotting graphs
-```{r}
-df2 <- df %>%
-  filter(Year == 2015 | Year == 2020) %>%
-  group_by(Continent, Year) %>%
-  summarise(continent_avg_NEET = mean(NEET_percentage), na.rm = TRUE)
 
 df <- df %>%
   group_by(Continent, Year) %>%
   mutate(continent_population = sum(as.numeric(Population), na.rm = TRUE)) %>%
   mutate(weight = (Population/continent_population)) %>%
-  mutate(continent_weighted_NEET = (weight * NEET_percentage))
+  mutate(weighted_NEET_percentage = (weight * NEET_percentage))
+```
 
-df3 <- df %>%
+# Plotting Graphs
+```{r General colours for Countries}
+continent_colors <- c(
+  "Asia" = "#1B9E77",
+  "Europe" = "#D95F02",
+  "Africa" = "#7570B3",
+  "North America" = "#E7298A",
+  "South America" = "#66A61E",
+  "Oceania" = "#E6AB02"
+)
+```
+
+## Bar Graph
+### Creating bar dataframe
+```{r bar graph dataframe}
+bar <- df %>%
   filter(Year == 2015 | Year == 2020) %>%
   group_by(Continent, Year) %>%
-  summarise(continent_weightedavg_NEET = sum(continent_weighted_NEET, na.rm = TRUE))
+  summarise(continent_avg_NEET = mean(NEET_percentage, na.rm = TRUE))
+
+weighted_bar <- df %>%
+  filter(Year == 2015 | Year == 2020) %>%
+  group_by(Continent, Year) %>%
+  summarise(continent_weighted_avg_NEET = sum(weighted_NEET_percentage, na.rm = TRUE))
+```
+### All Continents (2015 vs 2020) -- unweighted
+```{r Bar Graph 2015 against 2020}
+bar %>%
+  ggplot(aes(x = Year, y = continent_avg_NEET)) +
+  geom_col() +
+  facet_wrap(~ Continent) +
+  scale_x_continuous(breaks = c(2015, 2020)) +
+  labs(x = "Year",
+       y = "Average NEET (%)",
+       title = "NEET by Continent 2015 VS 2020") +
+  theme_minimal() + 
+  theme(
+    axis.title = element_text(size = 12, face = 'bold'),
+    axis.text = element_text(size = 10),
+    plot.title = element_text(hjust = 0.5, size = 15, face = 'bold'),
+  )
 
 ```
 
-
-# Plotting Graphs
-## Line / Scatter Graph
-### All Continents (2015 vs 2020)
-```{r Bar Graph 2015 against 2020}
-df2 %>%
-  ggplot(aes(x = Year, y = continent_avg_NEET, fill = Year)) +
+### All Continents (2015 vs 2020) -- weighted
+```{r bar graph aggregate 2015 against 2020}
+weighted_bar %>%
+  ggplot(aes(x = Year, y = continent_weighted_avg_NEET, fill = Year)) +
   geom_col() +
   facet_wrap(~ Continent) +
   scale_x_continuous(breaks = c(2015, 2020)) +
@@ -101,25 +129,175 @@ df2 %>%
     plot.title = element_text(hjust = 0.5, size = 15, face = 'bold'),
     
   )
-
 ```
 
-### All Continents (2015 vs 2020) -- aggregate
-```{r bar graph aggregate 2015 against 2020}
-df3 %>%
-  ggplot(aes(x = Year, y = continent_weightedavg_NEET, fill = Year)) +
-  geom_col() +
-  facet_wrap(~ Continent) +
-  scale_x_continuous(breaks = c(2015, 2020)) +
+
+
+
+
+## Line graph
+### Creating line dataframe
+```{r line dataframe}
+line <- df %>%
+  filter(Year >= 2000 & Year<=2020) %>%
+  group_by(Continent, Year) %>%
+  summarise(continent_avg_NEET = mean(NEET_percentage, na.rm = TRUE))
+
+weighted_line <- df %>%
+  filter(Year >= 2000 & Year<=2020) %>%
+  group_by(Continent, Year) %>%
+  summarise(continent_weighted_avg_NEET = mean(weighted_NEET_percentage, na.rm = TRUE))
+```
+### All Continents (2000-2020) -- unweigted
+```{r line graph 2000 to 2010 - unweighted}
+line %>%
+  ggplot(aes(x = Year, y = continent_avg_NEET)) + 
+  geom_line(aes(colour = Continent)) +
   labs(x = "Year",
-       y = "Average NEET (%)",
+       y = "Percentage of Population NEET (%)",
        title = "NEET by Continent Across Years") +
   theme_minimal() + 
   theme(
     axis.title = element_text(size = 12, face = 'bold'),
     axis.text = element_text(size = 10),
     plot.title = element_text(hjust = 0.5, size = 15, face = 'bold'),
-    
+  ) + 
+  scale_color_manual(values = continent_colors)
+```
+
+
+
+### All Continents (2000 - 2020) -- weighted
+```{r line graph 2000 to 2010 - weighted}
+weighted_line %>%
+  ggplot(aes(x = Year, y = continent_weighted_avg_NEET)) + 
+  geom_line(aes(colour = Continent)) +
+  labs(x = "Year",
+       y = "Percentage of Population NEET (%)",
+       title = "NEET by Continent Across Years") +
+  theme_minimal() + 
+  theme(
+    axis.title = element_text(size = 12, face = 'bold'),
+    axis.text = element_text(size = 10),
+    plot.title = element_text(hjust = 0.5, size = 15, face = 'bold'),
+  ) + 
+  scale_color_manual(values = continent_colors)
+```
+
+
+
+
+
+## Box Plot
+### Creating box dataframe
+```{r box dataframe}
+box <- df %>%
+  filter(Year == 2010 | Year == 2020) 
+```
+
+### All Continents (2010 vs 2020)
+```{r Box Plot 2010 against 2020}
+box %>%
+  ggplot(aes(x = factor(Year), y = NEET_percentage)) +
+  geom_boxplot() +
+  facet_wrap(~ Continent) +
+  labs(x = "Year",
+       y = "Average NEET (%)",
+       title = "NEET by Continent 2010 VS 2020") +
+  theme_minimal() + 
+  theme(
+    axis.title = element_text(size = 12, face = 'bold'),
+    axis.text = element_text(size = 10),
+    plot.title = element_text(hjust = 0.5, size = 15, face = 'bold'),
+  )
+
+```
+
+
+
+
+
+## Regression graph
+### Creating regression dataframe
+```{r Creating regression dataframe}
+regression <- df %>%
+  filter(Year >= 2000 & Year<=2020) %>%
+  group_by(Continent, Year) %>%
+  summarise(continent_avg_NEET = mean(NEET_percentage, na.rm = TRUE))
+
+weighted_regression <- df %>%
+  filter(Year >= 2000 & Year<=2020)%>%
+  group_by(Continent, Year) %>%
+  summarise(continent_weighted_avg_NEET = mean(weighted_NEET_percentage, na.rm = TRUE))
+```
+###All continents (2000 to 2020) -- unweighted
+```{r regression graph 2000 to 2020}
+regression %>%
+  ggplot(aes(x = Year, y = continent_avg_NEET)) + 
+  geom_smooth(aes(colour = Continent, fill = Continent), method = "lm") +
+  labs(x = "Year",
+       y = "Percentage of Population NEET (%)",
+       title = "NEET by Continent Across Years") +
+  theme_minimal() + 
+  theme(
+    axis.title = element_text(size = 12, face = 'bold'),
+    axis.text = element_text(size = 10),
+    plot.title = element_text(hjust = 0.5, size = 15, face = 'bold'),
+  ) + 
+  scale_color_manual(values = continent_colors)+
+  scale_fill_manual(values = continent_colors)
+```
+
+
+## Heatmap
+### Creating Heatmap dataframe
+```{r Creating Heatmap dataframe}
+heatmap <- df %>%
+  filter(Year >= 2000 & Year<=2020) %>%
+  group_by(Continent, Year) %>%
+  summarise(continent_avg_NEET = mean(NEET_percentage, na.rm = TRUE))
+
+weighted_heatmap <- df %>%
+  filter(Year >= 2000 & Year<=2020)%>%
+  group_by(Continent, Year) %>%
+  summarise(continent_weighted_avg_NEET = mean(weighted_NEET_percentage, na.rm = TRUE))
+```
+### All Continents (2000 to 2020) -- unweighted
+```{r}
+heatmap %>%
+  ggplot(aes(x = Year,
+             y = Continent,
+             fill = continent_avg_NEET)) +
+  geom_tile(color = "white") +
+  scale_fill_gradient(low = "lightblue", high = "darkred") +
+  labs(x = "Year",
+       y = "Percentage of Population NEET (%)",
+       title = "NEET by Continent Across Years") +
+  theme_minimal() + 
+  theme(
+    axis.title = element_text(size = 12, face = 'bold'),
+    axis.text = element_text(size = 10),
+    plot.title = element_text(hjust = 0.5, size = 15, face = 'bold'),
+  )
+```
+
+
+### All continents (2000 to 2020) -- weighted
+```{r}
+weighted_heatmap %>%
+  ggplot(aes(x = Year,
+             y = Continent,
+             fill = continent_weighted_avg_NEET)) +
+  geom_tile(color = "white") +
+  scale_fill_gradient(low = "lightblue", high = "darkred") +
+  labs(x = "Year",
+       y = "Percentage of Population NEET (%)",
+       title = "NEET by Continent Across Years") +
+  theme_minimal() + 
+  theme(
+    axis.title = element_text(size = 12, face = 'bold'),
+    axis.text = element_text(size = 10),
+    plot.title = element_text(hjust = 0.5, size = 15, face = 'bold'),
   )
 ```
 
