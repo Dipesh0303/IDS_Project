@@ -1,0 +1,139 @@
+# Load main packages
+library(tidyverse)
+
+# Load CSV data
+continents <- read.csv("continents-according-to-our-world-in-data.csv")
+gdp <- read.csv("gdp-per-capita-worldbank.csv")
+population <- read.csv("Extra CSV.csv")
+head(continents)
+head(gdp)
+head(population)
+
+Population <- read.csv("Extra CSV.csv") # same file
+
+# Keep country name, code and year columns
+# Pivot to long format
+head(Population)
+Population_long <- Population %>%
+  select(Country.Name, Country.Code, starts_with("X")) %>%
+  pivot_longer(
+    cols = starts_with("X"),
+    names_to = "Year",
+    values_to = "Population"
+  ) %>%
+# Remove the "X" and turn Year into numeric
+  mutate(Year = as.numeric(sub("X", "", Year)))
+
+head(Population_long)
+
+GDP <- read.csv("gdp-per-capita-worldbank.csv")
+
+# Rename columns to match population data
+GDP <- GDP %>%
+  rename(
+    Country.Name = Entity,
+    Country.Code = Code,
+    GDPperCapita = GDP.per.capita..PPP..constant.2017.international...
+  )
+
+head(GDP)
+
+# Combine GDP with population
+GDP_Pop <- GDP %>%
+  left_join(Population_long, by = c("Country.Code", "Year"))
+
+head(GDP_Pop)
+
+continents <- read.csv("continents-according-to-our-world-in-data.csv")
+
+# Keep only country code and continent
+continents <- continents %>%
+  select(Code, Continent)
+
+# Join continents to GDP and population
+GDP_full <- GDP_Pop %>%
+  left_join(continents, by = c("Country.Code" = "Code"))
+
+head(GDP_full)
+
+# Compute weighted GDP
+GDP_full <- GDP_full %>%
+  mutate(WeightedGDP = GDPperCapita * Population)
+
+head(GDP_full)
+
+# Aggregate to continent level
+Continent_Econ <- GDP_full %>%
+  group_by(Continent, Year) %>%
+  summarise(
+    CntTotalGDPweighted = sum(WeightedGDP, na.rm = TRUE),
+    CntPopTotal = sum(Population, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+# Population-weighted GDP per capita for each continent
+  mutate(
+    CntWeightedGDPpc = CntTotalGDPweighted / CntPopTotal
+  )
+
+head(Continent_Econ)
+
+View(Continent_Econ) # for checking
+
+# Plot1: Population-Weighted GDP per Capita Across Continents Over Time
+library(ggplot2)
+
+ggplot(Continent_Econ,
+       aes(x = Year,
+           y = CntWeightedGDPpc,
+           color = Continent,
+           group = Continent)) +
+  geom_line(linewidth = 1.2) +
+  geom_point(size = 1.8) +
+  scale_color_brewer(palette = "Set2", na.translate = FALSE) +
+# Show a tick every 5 years on the x-axis
+  scale_x_continuous(breaks = seq(min(Continent_Econ$Year),
+                                  max(Continent_Econ$Year),
+                                  by = 5)) +
+  labs(
+    title = "Population-Weighted GDP per Capita Across Continents Over Time",
+    x = "Year",
+    y = "Weighted GDP per Capita (2017 PPP)"
+  ) +
+  theme_minimal(base_size = 12) +
+  theme(
+    plot.title = element_text(face = "bold", hjust = 0.5, size = 12),
+    legend.title = element_blank()
+  )
+
+# Plot2: Total Population-Weighted GDP Across Continents Over Time
+library(ggplot2)
+
+ggplot(Continent_Econ,
+       aes(x = Year,
+           y = CntTotalGDPweighted,
+           color = Continent,
+           group = Continent)) +
+  geom_line(linewidth = 1.2) +
+  geom_point(size = 1.8) +
+  scale_color_brewer(palette = "Set2", na.translate = FALSE) +
+# Format large numbers on the y-axis in trillion
+  scale_y_continuous(
+    labels = scales::label_number(scale_cut = scales::cut_si("")),
+    breaks = seq(0, 7e13, by = 1e13)
+  ) +
+# Show a tick every 5 years on the x-axis
+  scale_x_continuous(breaks = seq(min(Continent_Econ$Year),
+                                  max(Continent_Econ$Year),
+                                  by = 5)) +
+  labs(
+    title = "Total Population-Weighted GDP Across Continents Over Time",
+    x = "Year",
+    y = "Total Weighted GDP (2017 PPP dollars)"
+  ) +
+  theme_minimal(base_size = 13) +
+  theme(
+    plot.title = element_text(face = "bold",
+                              hjust = 0.5,
+                              size = 12),
+    legend.title = element_blank()
+  )
