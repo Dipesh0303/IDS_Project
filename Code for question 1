@@ -44,6 +44,8 @@ ContinentalGDPgrowth <- full_data %>%
 
 North_America <- filter(full_data, Continent == "North America")
 Asia <- filter(full_data, Continent == "Asia")
+Africa <- filter(full_data, Continent == "Africa")
+Oceania <- filter(full_data, Continent == "Oceania")
 
 # creating dataframe to make chloropleth for 2020
 GDP2020 <- filter(GDP_per_capita, Year == 2020) %>%
@@ -227,6 +229,45 @@ map_data2020 %>% filter(continent == "North America") %>%
     legend.title = element_text(size = 15, face = "bold"),
     legend.text = element_text(size = 12))
 
+#Chloropleth for GDP per capita by Country (2020) in Africa using a log scale
+map_data2020 %>% filter(continent == "Africa") %>%
+  ggplot() +
+  geom_sf(aes(fill = GDPperCapita), color = "white", size = 0.15) +
+  scale_fill_viridis_c(option = "B", trans = "log", na.value = "grey80") +
+  theme_minimal() +
+  labs(
+    title = "GDP per capita by Country in Africa in 2020 (log scale)",
+    subtitle = "Grey values indicate missing data",
+    fill = "GDP per Capita"
+  ) +
+  theme(
+    axis.title = element_text(size = 15, face = "bold"),
+    axis.text = element_text(size = 12),
+    plot.title = element_text(hjust = 0.5, size = 20, face = "bold"),
+    plot.subtitle = element_text(hjust = 0.5, size = 15),
+    legend.title = element_text(size = 15, face = "bold"),
+    legend.text = element_text(size = 12))
+
+#Chloropleth for GDP per capita by Country (2020) in Oceania using a log scale
+map_data2020 %>% filter(continent == "Oceania") %>%
+  ggplot() +
+  geom_sf(aes(fill = GDPperCapita), color = "white", size = 0.15) +
+  scale_fill_viridis_c(trans = "log", option = "B", na.value = "grey80") +
+  scale_y_continuous(breaks = seq(-60, 60, by = 10)) +
+  theme_minimal() +
+  labs(
+    title = "GDP per capita by Country in Oceania in 2020 (log scale)",
+    subtitle = "Grey values indicate missing data",
+    fill = "GDP per Capita"
+  ) +
+  theme(
+    axis.title = element_text(size = 15, face = "bold"),
+    axis.text = element_text(size = 12),
+    plot.title = element_text(hjust = 0.5, size = 20, face = "bold"),
+    plot.subtitle = element_text(hjust = 0.5, size = 15),
+    legend.title = element_text(size = 15, face = "bold"),
+    legend.text = element_text(size = 12))
+
 # Bar graph showing the number of times GDP growth is over 7% in countries in Asia.
 Asia %>% filter(GDP_growth > 7) %>%
   group_by(Entity) %>%
@@ -275,6 +316,72 @@ North_America %>% filter(GDP_growth > 7) %>%
   geom_text(aes(label = count), hjust = -0.2, size = 3) +
   labs(
     title = "Number of Years Each Country Achieved > 7% GDP Growth in North America",
+    x = "Number of Years with Over 7% GDP Growth",
+    y = "Country",
+    fill = "Income classification") +
+  theme_minimal() +
+  theme(
+    axis.title = element_text(size = 15, face = "bold"),
+    axis.text = element_text(size = 12),
+    plot.title = element_text(hjust = 0.5, size = 20, face = "bold"),
+    legend.title = element_text(size = 15, face = "bold"),
+    legend.text = element_text(size = 12)) +
+  scale_fill_manual(
+    values = c("Low income" = "#ed0000",
+               "Low-middle income" = "darkorange",
+               "Upper-middle income" = "#09c2a5",
+               "High income" = "#0097af"),
+    breaks = c("High income", "Upper-middle income", "Low-middle income", "Low income")
+  )
+
+# Bar graph showing the number of times GDP growth is over 7% in countries in Africa.
+Africa %>% filter(GDP_growth > 7) %>%
+  group_by(Entity) %>%
+  summarise(count = n(),
+            avg_gdppc = mean(GDPperCapita, na.rm = TRUE)) %>%
+  arrange(desc(count)) %>%
+  ggplot(aes(x = count, y = reorder(Entity, count), fill = case_when(
+    avg_gdppc < 1600 ~ "Low income",
+    between(avg_gdppc, 1600, 5000) ~ "Low-middle income",
+    between(avg_gdppc, 5000, 14000) ~ "Upper-middle income",
+    avg_gdppc >14000 ~ "High income"))) +
+  geom_bar(stat = "identity") +
+  geom_text(aes(label = count), hjust = -0.2, size = 3) +
+  labs(
+    title = "Number of Years Each Country Achieved > 7% GDP Growth in Africa",
+    x = "Number of Years with Over 7% GDP Growth",
+    y = "Country",
+    fill = "Income classification") +
+  theme_minimal() +
+  theme(
+    axis.title = element_text(size = 15, face = "bold"),
+    axis.text = element_text(size = 12),
+    plot.title = element_text(hjust = 0.5, size = 20, face = "bold"),
+    legend.title = element_text(size = 15, face = "bold"),
+    legend.text = element_text(size = 12)) +
+  scale_fill_manual(
+    values = c("Low income" = "#ed0000",
+               "Low-middle income" = "darkorange",
+               "Upper-middle income" = "#09c2a5",
+               "High income" = "#0097af"),
+    breaks = c("High income", "Upper-middle income", "Low-middle income", "Low income")
+  )
+
+# Bar graph showing the number of times GDP growth is over 7% in countries in Oceania.
+Oceania %>% filter(GDP_growth > 7) %>%
+  group_by(Entity) %>%
+  summarise(count = n(),
+            avg_gdppc = mean(GDPperCapita, na.rm = TRUE)) %>%
+  arrange(desc(count)) %>%
+  ggplot(aes(x = count, y = reorder(Entity, count), fill = case_when(
+    avg_gdppc < 1600 ~ "Low income",
+    between(avg_gdppc, 1600, 5000) ~ "Low-middle income",
+    between(avg_gdppc, 5000, 14000) ~ "Upper-middle income",
+    avg_gdppc >14000 ~ "High income"))) +
+  geom_bar(stat = "identity") +
+  geom_text(aes(label = count), hjust = -0.2, size = 3) +
+  labs(
+    title = "Number of Years Each Country Achieved > 7% GDP Growth in Oceania",
     x = "Number of Years with Over 7% GDP Growth",
     y = "Country",
     fill = "Income classification") +
