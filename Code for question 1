@@ -156,7 +156,7 @@ full_data %>% filter(GDP_growth > 7, Year %in% c(1990, 1995, 2000,2005,2010,2015
             colour = "white",
             size = 4) +
   labs(
-    title = "Number of countries that achieved > 7% GDP Growth in each continent",
+    title = "Number of countries that achieved GDP Growth over 7% in each continent in select years",
     x = "Continent",
     y = "Number of Countries Over 7% Growth",
     fill = "Year") +
