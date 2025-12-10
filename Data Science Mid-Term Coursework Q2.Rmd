@@ -26,7 +26,7 @@ library(english)
 continents <- read.csv("continents-according-to-our-world-in-data.csv")
 gdp_per_capita <- read.csv("gdp-per-capita-worldbank.csv")
 youth <- read.csv("youth-not-in-education-employment-training.csv")
-population <- read.csv("Extra CSV.csv")
+population <- read.csv("World Population.csv")
 ```
 
 ## Cleaning satasets
@@ -34,17 +34,57 @@ population <- read.csv("Extra CSV.csv")
 continents <- continents %>%
   select(c(-Year, -Code))
 
+# population <- population %>%
+#   pivot_longer(
+#     cols = `X1960`:`X2024`,
+#     names_to = "Year",
+#     values_to = "Population"
+#   )
 population <- population %>%
-  pivot_longer(
-    cols = `X1960`:`X2024`,
-    names_to = "Year",
-    values_to = "Population"
-  )
-population <- population %>%
-  mutate(Year = as.integer(sub("^X", "", as.character(Year)))) %>%
-  select(Country.Name, Year, Population) %>%
-  rename(Country = Country.Name)
+  rename(Country = Region..subregion..country.or.area..) %>%
+  select(Country, Year, X0.14, X0.24) %>%
+  mutate(
+    X0.14 = as.numeric(gsub("[^0-9.]", "", X0.14)),
+    X0.24 = as.numeric(gsub("[^0-9.]", "", X0.24))
+  ) %>%
+  mutate(X0.14 = X0.14*1000, X0.24 = X0.24*1000) %>%
+  mutate(Population = X0.24 - X0.14)
 
+# Changing names which are not the same
+country_map <- c(
+  # population name                         = name in Data set 1
+  "Democratic Republic of the Congo" = "Democratic Republic of Congo",
+  "Côte d'Ivoire"                    = "Cote d'Ivoire",
+  "Lao People's Democratic Republic" = "Laos",
+  "Timor-Leste"                      = "East Timor",
+  "China, Hong Kong SAR"             = "Hong Kong",
+  "China, Macao SAR"                 = "Macao",
+  "Russian Federation"               = "Russia",
+  "Viet Nam"                         = "Vietnam",
+  "Brunei Darussalam"                = "Brunei",
+  "State of Palestine"               = "Palestine",
+  "United Republic of Tanzania"      = "Tanzania",
+  "Bolivia (Plurinational State of)" = "Bolivia",
+  "Venezuela (Bolivarian Republic of)" = "Venezuela",
+  "Micronesia (Fed. States of)"      = "Micronesia (country)",
+  "Türkiye"                          = "Turkey"
+)
+
+population <- population %>%
+  mutate(
+    Country = recode(Country, !!!country_map)
+  )
+# gdp_per_capita <- gdp_per_capita %>%
+#   rename("GDPperCapita" = GDP.per.capita..PPP..constant.2017.international...) %>%
+#   mutate(income_group = case_when(
+#     GDPperCapita < 1600 ~ "Low income",
+#     between(GDPperCapita, 1600, 5000) ~ "Low-middle income",
+#     between(GDPperCapita, 5000, 14000) ~ "Upper-middle income",
+#     GDPperCapita >14000 ~ "High income"
+#   ))
+
+trial <- df %>%
+  filter(Continent == "Asia")
 ```
 
 ## Merging datasets
@@ -66,6 +106,7 @@ df <- df %>%
   mutate(continent_population = sum(as.numeric(Population), na.rm = TRUE)) %>%
   mutate(weight = (Population/continent_population)) %>%
   mutate(weighted_NEET_percentage = (weight * NEET_percentage))
+
 ```
 
 # Plotting Graphs
@@ -139,16 +180,19 @@ weighted_bar %>%
 ### Creating line dataframe
 ```{r line dataframe}
 line <- df %>%
-  filter(Year >= 2000 & Year<=2020) %>%
+  filter(Year >= 2005 & Year<=2020) %>%
   group_by(Continent, Year) %>%
   summarise(continent_avg_NEET = mean(NEET_percentage, na.rm = TRUE))
 
 weighted_line <- df %>%
-  filter(Year >= 2000 & Year<=2020) %>%
+  filter(Year >= 2005 & Year<=2020) %>%
   group_by(Continent, Year) %>%
   summarise(continent_weighted_avg_NEET = mean(weighted_NEET_percentage, na.rm = TRUE))
+
+trial <- df %>%
+  filter(Continent == "Asia")
 ```
-### All Continents (2000-2020) -- unweigted
+### All Continents (2005-2020) -- unweigted
 ```{r line graph 2000 to 2010 - unweighted}
 line %>%
   ggplot(aes(x = Year, y = continent_avg_NEET)) + 
@@ -167,14 +211,16 @@ line %>%
 
 
 
-### All Continents (2000 - 2020) -- weighted
-```{r line graph 2000 to 2010 - weighted}
+### All Continents (2005 - 2020) -- weighted
+```{r line graph 2005 to 2010 - weighted}
 weighted_line %>%
   ggplot(aes(x = Year, y = continent_weighted_avg_NEET)) + 
   geom_line(aes(colour = Continent)) +
+  geom_vline(xintercept = 2007, linetype = "dashed", colour = "black", linewidth = 1) +
+  geom_vline(xintercept = 2008, linetype = "dashed", colour = "black", linewidth = 1) +
   labs(x = "Year",
-       y = "Percentage of Population NEET (%)",
-       title = "NEET by Continent Across Years") +
+       y = "Population-Weighted NEET (%)",
+       title = "Population-Weighted NEET Trends Over Time (2005 - 2020)") +
   theme_minimal() + 
   theme(
     axis.title = element_text(size = 12, face = 'bold'),
@@ -192,18 +238,18 @@ weighted_line %>%
 ### Creating box dataframe
 ```{r box dataframe}
 box <- df %>%
-  filter(Year == 2010 | Year == 2020) 
+  filter(Year == 2015 | Year == 2020) 
 ```
 
-### All Continents (2010 vs 2020)
-```{r Box Plot 2010 against 2020}
+### All Continents (2015 vs 2020)
+```{r Box Plot 2015 against 2020}
 box %>%
   ggplot(aes(x = factor(Year), y = NEET_percentage)) +
   geom_boxplot() +
   facet_wrap(~ Continent) +
   labs(x = "Year",
        y = "Average NEET (%)",
-       title = "NEET by Continent 2010 VS 2020") +
+       title = "Average NEET by Continent (2015 VS 2020)") +
   theme_minimal() + 
   theme(
     axis.title = element_text(size = 12, face = 'bold'),
@@ -213,56 +259,81 @@ box %>%
 
 ```
 
-
-
-
-
 ## Regression graph
 ### Creating regression dataframe
 ```{r Creating regression dataframe}
 regression <- df %>%
-  filter(Year >= 2000 & Year<=2020) %>%
+  filter(Year >= 2005 & Year<=2020) %>%
   group_by(Continent, Year) %>%
   summarise(continent_avg_NEET = mean(NEET_percentage, na.rm = TRUE))
 
 weighted_regression <- df %>%
-  filter(Year >= 2000 & Year<=2020)%>%
+  filter(Year >= 2005 & Year<=2020)%>%
   group_by(Continent, Year) %>%
   summarise(continent_weighted_avg_NEET = mean(weighted_NEET_percentage, na.rm = TRUE))
+
+weighted_regression_graph <- weighted_regression %>%
+  filter(!(Continent == "Africa" & Year == 2007)) %>%
+  filter(!(Continent == "Africa" & Year == 2008)) %>%
+  filter(!(Continent == "Asia" & Year == 2005)) %>%
+  filter(!(Continent == "Oceania" & Year == 2007)) %>%
+  filter(!(Continent == "Oceania" & Year == 2008)) %>%
+  filter(!(Continent == "South America" & Year == 2020))
 ```
-###All continents (2000 to 2020) -- unweighted
-```{r regression graph 2000 to 2020}
+### All continents (2005 to 2020) -- unweighted
+```{r regression graph 2005 to 2020}
 regression %>%
   ggplot(aes(x = Year, y = continent_avg_NEET)) + 
+  geom_point(aes(colour = Continent), shape = 19) +
   geom_smooth(aes(colour = Continent, fill = Continent), method = "lm") +
+  facet_wrap(~ Continent) +
   labs(x = "Year",
        y = "Percentage of Population NEET (%)",
        title = "NEET by Continent Across Years") +
   theme_minimal() + 
   theme(
     axis.title = element_text(size = 12, face = 'bold'),
-    axis.text = element_text(size = 10),
+    axis.text = element_text(size = 6),
     plot.title = element_text(hjust = 0.5, size = 15, face = 'bold'),
   ) + 
   scale_color_manual(values = continent_colors)+
   scale_fill_manual(values = continent_colors)
 ```
-
+### All continents (2005 to 2020) -- weighted
+```{r regression graph 2005 to 2020}
+weighted_regression %>%
+  ggplot(aes(x = Year, y = continent_weighted_avg_NEET)) + 
+  geom_point(aes(colour = Continent), shape = 19) +
+  geom_smooth(data = weighted_regression_graph, se = FALSE, aes(colour = Continent), 
+              method = "lm") +
+  facet_wrap(~ Continent) +
+  labs(x = "Year",
+       y = "Population-Weighted NEET (%)",
+       title = "Weighted NEET by Continent Over Time") +
+  theme_minimal() + 
+  theme(
+    axis.title = element_text(size = 12, face = 'bold'),
+    axis.text = element_text(size = 6),
+    plot.title = element_text(hjust = 0.5, size = 15, face = 'bold'),
+  ) + 
+  scale_color_manual(values = continent_colors) 
+  # scale_fill_manual(values = continent_colors)
+```
 
 ## Heatmap
 ### Creating Heatmap dataframe
 ```{r Creating Heatmap dataframe}
 heatmap <- df %>%
-  filter(Year >= 2000 & Year<=2020) %>%
+  filter(Year >= 2005 & Year<=2020) %>%
   group_by(Continent, Year) %>%
   summarise(continent_avg_NEET = mean(NEET_percentage, na.rm = TRUE))
 
 weighted_heatmap <- df %>%
-  filter(Year >= 2000 & Year<=2020)%>%
+  filter(Year >= 2005 & Year<=2020)%>%
   group_by(Continent, Year) %>%
   summarise(continent_weighted_avg_NEET = mean(weighted_NEET_percentage, na.rm = TRUE))
 ```
-### All Continents (2000 to 2020) -- unweighted
+### All Continents (2005 to 2020) -- unweighted
 ```{r}
 heatmap %>%
   ggplot(aes(x = Year,
@@ -282,7 +353,7 @@ heatmap %>%
 ```
 
 
-### All continents (2000 to 2020) -- weighted
+### All continents (2005 to 2020) -- weighted
 ```{r}
 weighted_heatmap %>%
   ggplot(aes(x = Year,
@@ -298,6 +369,176 @@ weighted_heatmap %>%
     axis.title = element_text(size = 12, face = 'bold'),
     axis.text = element_text(size = 10),
     plot.title = element_text(hjust = 0.5, size = 15, face = 'bold'),
+  )
+```
+## Normalised NEET
+### Creating normalised NEET data frame
+```{r}
+NEET_summary <- df %>%
+  filter(Year >= 2005 & Year <= 2020) %>%
+  group_by(Continent, Country) %>%
+  summarise(
+    first_year = min(Year),
+    last_year = max(Year),
+    neet_first = NEET_percentage[Year == first_year],
+    neet_last = NEET_percentage[Year == last_year]
+  )
+
+normalised_NEET <- NEET_summary %>%
+  mutate(
+    years_span = last_year - first_year,
+    arithmetic_change =  neet_last - neet_first,
+    normalised_NEET_decrease = (arithmetic_change / years_span) / neet_first *100
+  )
+
+
+
+africa_nomalised_NEET <- normalised_NEET %>%
+  filter(Continent == 'Africa') %>%
+  filter(!is.na(normalised_NEET_decrease))
+
+asia_nomalised_NEET <- normalised_NEET %>%
+  filter(Continent == 'Asia') %>%
+  filter(!is.na(normalised_NEET_decrease))
+
+europe_nomalised_NEET <- normalised_NEET %>%
+  filter(Continent == 'Europe') %>%
+  filter(!is.na(normalised_NEET_decrease))
+
+na_nomalised_NEET <- normalised_NEET %>%
+  filter(Continent == 'North America') %>%
+  filter(!is.na(normalised_NEET_decrease))
+
+oceania_nomalised_NEET <- normalised_NEET %>%
+  filter(Continent == 'Oceania') %>%
+  filter(!is.na(normalised_NEET_decrease))
+
+sa_nomalised_NEET <- normalised_NEET %>%
+  filter(Continent == 'South America') %>%
+  filter(!is.na(normalised_NEET_decrease))
+```
+
+### Plotting graph
+#### Africa
+```{r Africa Normalised NEET}
+africa_nomalised_NEET %>%
+  arrange(normalised_NEET_decrease) %>%                        
+  mutate(Country = factor(Country, levels = Country)) %>%      
+  ggplot(aes(x = normalised_NEET_decrease, y = Country)) +
+  geom_col(fill = "pink", alpha = 0.6) +                       
+  geom_vline(xintercept = 0, colour = "grey40") +              
+  labs(
+    x = "Normalized NEET Change between 2005 and 2020 (%)",
+    y = "Country",
+    title = "Normalized NEET Change by Country in Africa\nbetween 2005 and 2020"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.title = element_text(size = 12, face = "bold"),
+    axis.text  = element_text(size = 8),
+    plot.title = element_text(hjust = 0.5, size = 15, face = "bold")
+  )
+```
+#### Asia
+```{r Asia Normalised NEET}
+asia_nomalised_NEET %>%
+  arrange(normalised_NEET_decrease) %>%                        
+  mutate(Country = factor(Country, levels = Country)) %>%      
+  ggplot(aes(x = normalised_NEET_decrease, y = Country)) +
+  geom_col(fill = "pink", alpha = 0.6) +                       
+  geom_vline(xintercept = 0, colour = "grey40") +              
+  labs(
+    x = "Normalized NEET Change between 2005 and 2020 (%)",
+    y = "Country",
+    title = "Normalized NEET Change by Country in Asia\nbetween 2005 and 2020"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.title = element_text(size = 12, face = "bold"),
+    axis.text  = element_text(size = 8),
+    plot.title = element_text(hjust = 0.5, size = 15, face = "bold")
+  )
+```
+#### Europe
+```{r Europe Normalised NEET}
+europe_nomalised_NEET %>%
+  filter(!(Country == "Belarus")) %>%
+  arrange(normalised_NEET_decrease) %>%                        
+  mutate(Country = factor(Country, levels = Country)) %>%      
+  ggplot(aes(x = normalised_NEET_decrease, y = Country)) +
+  geom_col(fill = "pink", alpha = 0.6) +                       
+  geom_vline(xintercept = 0, colour = "grey40") +              
+  labs(
+    x = "Normalized NEET Change between 2005 and 2020 (%)",
+    y = "Country",
+    title = "Normalized NEET Change by Country in Europe\nbetween 2005 and 2020"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.title = element_text(size = 12, face = "bold"),
+    axis.text  = element_text(size = 8),
+    plot.title = element_text(hjust = 0.5, size = 15, face = "bold")
+  )
+```
+#### North America
+```{r North America Normalised NEET}
+na_nomalised_NEET %>%
+  filter(!(Country == "Curacao")) %>%
+  arrange(normalised_NEET_decrease) %>%                        
+  mutate(Country = factor(Country, levels = Country)) %>%      
+  ggplot(aes(x = normalised_NEET_decrease, y = Country)) +
+  geom_col(fill = "pink", alpha = 0.6) +                       
+  geom_vline(xintercept = 0, colour = "grey40") +              
+  labs(
+    x = "Normalized NEET Change between 2005 and 2020 (%)",
+    y = "Country",
+    title = "Normalized NEET Change by Country in North America\nbetween 2005 and 2020"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.title = element_text(size = 12, face = "bold"),
+    axis.text  = element_text(size = 8),
+    plot.title = element_text(hjust = 0.5, size = 15, face = "bold")
+  )
+```
+#### Oceania
+```{r Oceania Normalised NEET}
+oceania_nomalised_NEET %>%
+  arrange(normalised_NEET_decrease) %>%                        
+  mutate(Country = factor(Country, levels = Country)) %>%      
+  ggplot(aes(x = normalised_NEET_decrease, y = Country)) +
+  geom_col(fill = "pink", alpha = 0.6) +                       
+  geom_vline(xintercept = 0, colour = "grey40") +              
+  labs(
+    x = "Normalized NEET Change between 2005 and 2020 (%)",
+    y = "Country",
+    title = "Normalized NEET Change by Country in Oceania\nbetween 2005 and 2020"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.title = element_text(size = 12, face = "bold"),
+    axis.text  = element_text(size = 8),
+    plot.title = element_text(hjust = 0.5, size = 15, face = "bold")
+  )
+```
+#### South America
+```{r South America Normalised NEET}
+sa_nomalised_NEET %>%
+  arrange(normalised_NEET_decrease) %>%                        
+  mutate(Country = factor(Country, levels = Country)) %>%      
+  ggplot(aes(x = normalised_NEET_decrease, y = Country)) +
+  geom_col(fill = "pink", alpha = 0.6) +                       
+  geom_vline(xintercept = 0, colour = "grey40") +              
+  labs(
+    x = "Normalized NEET Change from 2005 to 2020 (%)",
+    y = "Country",
+    title = "Normalized NEET Change by Country in South America\nbetween 2005 to 2020"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.title = element_text(size = 12, face = "bold"),
+    axis.text  = element_text(size = 8),
+    plot.title = element_text(hjust = 0.5, size = 15, face = "bold")
   )
 ```
 
