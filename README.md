@@ -5,6 +5,6 @@ The folder Final_Project contains the Rmd file containing the code, the compiled
 
 Within this folder, there is another folder containing the data set csv files called 'data'.
 
-Within the Rmd file, the path to the csv files is through the GitHub path being read.csv("data/{csv_file_name}")
+Within the Rmd file, the path to the csv files is through the GitHub path. This is seen as read.csv("data/{csv_file_name}")
 
 The working directory of the Rmd file also has a path set to this project in GitHub. This is seen as setwd("Final_Project/data")
