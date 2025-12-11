@@ -1,7 +1,7 @@
 All the assessed content for the final project is in the GitHub folder called Final_project.
 All other files are working and separate code files through rough work and graph creation.
 
-This folder contains the Rmd file containing the code, the compiled pdf of the code and the final written report for our project.
+The folder Final_Project contains the Rmd file containing the code, the compiled pdf of the code and the final written report for our project.
 
 Within this folder, there is another folder containing the data set csv files called 'data'.
 
