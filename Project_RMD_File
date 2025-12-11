@@ -20,6 +20,17 @@ Dipesh(Dipesh0303), Aik Hsiong(AikHsiong), Mia(miahossen), Mahika(mahikachawda),
 ## Loading libraries and packages
 
 ```{r, warning=FALSE}
+install.packages("tidyverse")
+install.packages("ggplot2")
+install.packages("dplyr")
+install.packages("sf")
+install.packages("rnaturalearth")
+install.packages("rnaturalearthdata")
+install.packages("readr")
+install.packages("stringr")
+install.packages("dslabs")
+install.packages("english")
+install.packages("tinytex")
 library(tidyverse)
 library(ggplot2)
 library(dplyr)
@@ -38,8 +49,8 @@ library(tinytex)
 ## Loading datasets
 
 ```{r}
-continents <- read.csv("continents-according-to-our-world-in-data.csv")
-GDP_per_capita <- read.csv("gdp-per-capita-worldbank.csv")
+continents <- read.csv("data/continents-according-to-our-world-in-data.csv")
+GDP_per_capita <- read.csv("data/gdp-per-capita-worldbank.csv")
 world <- ne_countries(scale = "medium", returnclass = "sf")
 ```
 
@@ -514,10 +525,10 @@ ggplot(map_data2019) +
 
 ## Loading of datasets
 ```{r}
-continents <- read.csv("continents-according-to-our-world-in-data.csv")
-gdp_per_capita <- read.csv("gdp-per-capita-worldbank.csv")
-youth <- read.csv("youth-not-in-education-employment-training.csv")
-population <- read.csv("World Population.csv")
+continents <- read.csv("data/continents-according-to-our-world-in-data.csv")
+gdp_per_capita <- read.csv("data/gdp-per-capita-worldbank.csv")
+youth <- read.csv("data/youth-not-in-education-employment-training.csv")
+population <- read.csv("data/World Population.csv")
 ```
 
 ## Cleaning datasets
